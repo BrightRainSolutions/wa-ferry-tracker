@@ -1,0 +1,30 @@
+html, body, #app {
+  padding: 0;
+  margin: 0;
+  height: 100%;
+  width: 100%;
+  font-family: Arial, Helvetica, sans-serif;
+}
+#mapView {
+  height: 100%;
+  width: 100%;
+}
+/* loading */
+#loader {
+  position: absolute;
+  z-index: 9999;
+  top: 60px;
+  width: 100%;
+  height: 5px;
+  background: repeating-linear-gradient(to right, #479429 0%, #ffc924 50%);
+  background-size: 200% auto;
+  background-position: 0 100%;
+  animation: gradient 1.5s infinite;
+  animation-fill-mode: forwards;
+  animation-timing-function: linear;
+}
+
+@keyframes gradient { 
+  0%   { background-position: 0 0; }
+  100% { background-position: -100% 0; }
+}

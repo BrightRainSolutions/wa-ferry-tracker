@@ -1,0 +1,23 @@
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
+  <link rel="icon" href="./assets/ferry.png">
+  <title>ferry tracker</title>
+
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
+  <link rel="stylesheet" href="https://js.arcgis.com/4.16/esri/css/main.css">
+  <link rel="stylesheet" href="style/index.css">
+  <script src="https://cdn.jsdelivr.net/npm/vue@2.6.11"></script>
+  <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"></script>
+  <script src="https://js.arcgis.com/4.17/"></script>
+  <script src="js/index.js"></script>
+
+</head>
+<body>
+  <div id="app">
+    <div id="loader" v-show="current.isUpdating"></div>
+    <div id="mapView"></div>
+</div>
+</body>
+</html>
