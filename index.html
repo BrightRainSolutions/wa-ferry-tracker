@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="initial-scale=1, maximum-scale=1, user-scalable=no">
-  <link rel="icon" href="./assets/ferry-east.png">
-  <title>ferry tracker</title>
+  <link rel="icon" href="./assets/ferry.png">
+  <title>ALL THE FERRIES</title>
 
   <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.8.0/css/bulma.min.css">
   <link rel="stylesheet" href="https://js.arcgis.com/4.16/esri/css/main.css">
@@ -30,22 +30,52 @@
       <h2><b>{{selectedVessel.attributes.DepartingTerminalName}} ➟
           {{selectedVessel.attributes.ArrivingTerminalName}}</b></h2>
       <h4><b>ETA {{selectedVessel.attributes.EtaHuman}}</b></h4>
-      <h6>Next Departure {{selectedVessel.attributes.ScheduledDepartureHuman}}</h6>
+      <br>
       <p>speed: {{selectedVessel.attributes.Speed}} | heading: {{selectedVessel.attributes.Heading}}</p>
       <span id="ferryZoom">
         <a class="ferry-link" @click="zoomToSelectedFerry">
           <i class="esri-icon-zoom-in-magnifying-glass"></i> ZOOM TO
         </a>
       </span>
-      <i style='float:right;'><small>{{selectedVessel.attributes.TimeStampHuman}}</small></i>
+      <i style='float:right;'><small>last updated: {{selectedVessel.attributes.TimeStampHuman}}</small></i>
     </div>
     <div id="introBox" class="panel" v-show="showingIntrobox">
       <img src="assets/washington-state-ferries-logo.svg" alt="wa ferries logo" id="ferry-logo">
-      <h2 id="introTitle">WASHINGTON STATE FERRY<br>REAL-TIME TRACKER</h2>
+      <h2 id="introTitle"><br>REAL-TIME TRACKER</h2>
       <br>
       <p>Select a ferry to display vessel schedule and other real-time details</p>
     </div>
     <div id="mapView"></div>
+    <div id="outOfExtentNotification" v-bind:class="{ show: showingOutOfExtentNotification }" class="notification is-warning">
+      Your location appears to be outside of the ferry area. We've done our best to find you!
+    </div>
+    <div id="about" @click="showAbout=true">
+      <img src="assets/info.png" title="info about all the ferries">
+    </div>
+    <div class="modal" v-bind:class="{ 'is-active': showAbout }" style="z-index: 99999">
+      <div class="modal-background"></div>
+      <div class="modal-card">
+        <header class="modal-card-head">
+          <p class="modal-card-title">ALL THE FERRIES</p>
+          <button  @click="showAbout=false" class="delete" aria-label="close"></button>
+        </header>
+        <section class="modal-card-body">
+          <a href="https://brightrain.com" target="_blank">
+            <img class="is-pulled-right" src="assets/brightrain.png" width="200px">
+          </a>
+          <img src="assets/ferry.png">
+          <p>
+            <span>Whether you are aboard a ferry right now, about to board, or a million miles from here, I hope you enjoy ALL THE FERRIES, brought to you by </span>
+            <a href="https://brightrain.com" id="brsLink" target="_blank">Bright Rain Solutions</a>.
+          </p>
+          <br>
+          <p>Safe Harbor friend and may the wind take your troubles away.</p>
+        </section>
+        <footer class="modal-card-foot">
+          <button @click="showAbout=false" class="ferriesBtn">OK</button>
+        </footer>
+      </div>
+    </div>
   </div>
 </body>
 

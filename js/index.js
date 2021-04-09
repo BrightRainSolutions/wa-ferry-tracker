@@ -3,15 +3,20 @@ require([
 	"esri/views/MapView",
 	"esri/layers/GraphicsLayer",
 	"esri/Graphic",
-	"esri/geometry/Point"
-], function (Map, MapView, GraphicsLayer, Graphic, Point) {
+	"esri/geometry/Point",
+	"esri/geometry/Extent",
+	"esri/widgets/Locate",
+	"esri/widgets/Home",
+	"esri/geometry/geometryEngine"
+], function (Map, MapView, GraphicsLayer, Graphic, Point, Extent, Locate, Home, geometryEngine) {
 	const app = new Vue({
 		el: "#app",
 		data: {
 			isUpdating: false,
 			showingIntrobox: true,
 			showingInfobox: false,
-			ferriesLayer: null,
+			showingOutOfExtentNotification: false,
+			showAbout: false,
 			ferriesGraphicsLayer: null,
 			selectedFerryGraphicsLayer: null,
 			selectedFerryMarker: null,
@@ -25,19 +30,26 @@ require([
 					width: 1
 				}
 			},
+			mapExtent: {
+				type: "extent",
+				xmin: -123,
+				ymin: 47,
+				xmax: -122,
+				ymax: 49
+			},
 			ferryMarkers: {
 				headingEast: {
 					type: "picture-marker",
 					url: "assets/ferry-heading-east.png",
-					width: "18px",
-					height: "30px",
+					width: "60px",
+					height: "60px",
 					angle: 0
 				},
 				headingWest: {
 					type: "picture-marker",
 					url: "assets/ferry-heading-west.png",
-					width: "18px",
-					height: "30px",
+					width: "60px",
+					height: "60px",
 					angle: 0
 				}
 			},
@@ -142,17 +154,53 @@ require([
 					center: [-122.5, 48],
 					constraints: {
 						rotationEnabled: false,
-						geometry: {
-							type: "extent",
-							xmin: -123,
-							ymin: 47,
-							xmax: -122,
-							ymax: 49
-					  }
+						geometry: this.mapExtent
 					},
 					zoom: 8
 				});
 				this.view.ui.move([ "zoom" ], "bottom-left");
+
+				// allow user to zoom to their location
+				// cool if you are on an actual ferry or close to a ferry
+				// BUT, we have a constraint on our extent so need to capture if user is not within it
+				// we cannot zoom to location if so
+				const locate = new Locate({
+					view: this.view,
+					graphic: new Graphic({
+						symbol: {
+							type: "simple-marker",
+							style: "circle",
+							color: "#007B5F",
+							size: "12px",
+							outline: {
+							  color: "white",
+							  width: 1
+							}
+						}
+					})
+				});
+				this.view.ui.add(locate, "bottom-left");
+				// fires when the users location is found
+				locate.on("locate", e => {
+					// ToDo: test if users location is within our map view constraint container
+					// if not the map will not pan to the location so let the user know
+					let userLoc = new Point({
+						latitude: e.position.coords.latitude,
+						longitude: e.position.coords.longitude
+					});
+					const mapExtent = new Extent(this.mapExtent);
+					let inExtent = geometryEngine.within(userLoc, mapExtent);
+					if(inExtent===false) {
+						this.showingOutOfExtentNotification = true;
+						setTimeout(() => { this.showingOutOfExtentNotification = false; }, 3000);
+					}
+				  });
+
+				  const home = new Home({
+					view: this.view,
+					label: "Go to all the ferries"
+				});
+				this.view.ui.add(home, "bottom-left");
 
 				// the graphics layer that will hold the selected ferry graphic
 				this.selectedFerryGraphicsLayer = new GraphicsLayer();

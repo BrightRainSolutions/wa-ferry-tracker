@@ -29,6 +29,59 @@ html, body, #app {
   width: 100px;
   float: right;
 }
+#outOfExtentNotification {
+  display: none;
+  font-weight: bold;
+  left: 30%;
+  position: fixed;
+  z-index: 9999;
+  bottom: 30px;
+}
+#about {
+  position: absolute;
+  z-index: 999;
+  bottom: 30px;
+  right: 30px;
+  background-color: rgba(255,255,255,0.7);
+  border-radius: 50%;
+  padding: 2px;
+  cursor: pointer
+}
+#about:hover {
+  background-color: rgba(255,255,255,1);
+}
+#brsLink:hover {
+  color: #0044aa;
+}
+#brsLink {
+  color: #ff6600;
+  text-decoration: none;
+}
+#outOfExtentNotification.show {
+  display: block;
+  -webkit-animation: fadein 0.5s, fadeout 0.5s 2.8s;
+  animation: fadein 0.5s, fadeout 0.5s 2.8s;
+}
+/* Animations to fade the snackbar in and out */
+@-webkit-keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@keyframes fadein {
+  from {bottom: 0; opacity: 0;}
+  to {bottom: 30px; opacity: 1;}
+}
+
+@-webkit-keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
+
+@keyframes fadeout {
+  from {bottom: 30px; opacity: 1;}
+  to {bottom: 0; opacity: 0;}
+}
 .panel {
   position: absolute;
   z-index: 9999;
@@ -40,6 +93,19 @@ html, body, #app {
   padding: 18px;
   opacity: 0.9;
 }
+button.ferriesBtn {
+  font-size: 18px;
+  background-color: #007B5F;
+  border: none;
+  border-radius: 4px;
+  color:whitesmoke;
+  cursor: pointer;
+  justify-content: center;
+  padding: 12px;
+  text-align: center;
+  white-space: nowrap;
+}
+
 /* media queries to format panel to support mobile */
 @media screen and (max-width: 600px) {
   .panel {
@@ -54,6 +120,7 @@ html, body, #app {
 }
 #ferryZoom {
   font-size: 12px;
+  margin-top: 8px
 }
 a.ferry-link {
   color: #007B5F !important
