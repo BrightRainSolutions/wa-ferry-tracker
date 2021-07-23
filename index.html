@@ -17,7 +17,7 @@
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"></script>
   <script src="https://js.arcgis.com/4.17/"></script>
 
-  <script src="js/index.js"></script>
+  <script src="js/index-v.1.1.0.js"></script>
 
 </head>
 
@@ -25,6 +25,7 @@
   <div id="app">
     <div id="loader" v-show="isUpdating"></div>
     <div id="infoBox" class="panel" v-show="showingInfobox">
+      <h1>{{currentZoom}}</h1>
       <img src="assets/washington-state-ferries-logo.svg" alt="wa ferries logo" id="info-ferry-logo">
       <h1 class="vessel-title">{{selectedVessel.attributes.VesselName}}</h1>
       <h2><b>{{selectedVessel.attributes.DepartingTerminalName}} ➟
@@ -63,7 +64,12 @@
           <a href="https://brightrain.com" target="_blank">
             <img class="is-pulled-right" src="assets/brightrain.png" width="200px">
           </a>
-          <img src="assets/ferry.png">
+          <div id="ferriesCruiseContainer">
+            <img src="assets/ferry-west.png" id="aboutFerryWest"  width="70px">
+            <img src="assets/ferry.png" id="aboutFerryEast1">
+            <img src="assets/ferry.png" id="aboutFerryEast2" width="85px">
+            
+          </div>
           <p>
             <span>Whether you are aboard a ferry right now, about to board, or a million miles from here, I hope you enjoy ALL THE FERRIES, brought to you by </span>
             <a href="https://brightrain.com" id="brsLink" target="_blank">Bright Rain Solutions</a>.
