@@ -25,7 +25,6 @@
   <div id="app">
     <div id="loader" v-show="isUpdating"></div>
     <div id="infoBox" class="panel" v-show="showingInfobox">
-      <h1>{{currentZoom}}</h1>
       <img src="assets/washington-state-ferries-logo.svg" alt="wa ferries logo" id="info-ferry-logo">
       <h1 class="vessel-title">{{selectedVessel.attributes.VesselName}}</h1>
       <h2><b>{{selectedVessel.attributes.DepartingTerminalName}} ➟
