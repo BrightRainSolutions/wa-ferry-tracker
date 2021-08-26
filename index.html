@@ -17,27 +17,88 @@
   <script src="https://cdn.jsdelivr.net/npm/lodash@4.17.20/lodash.min.js"></script>
   <script src="https://js.arcgis.com/4.17/"></script>
 
-  <script src="js/index-v.1.1.0.js"></script>
+  <script src="js/index.js"></script>
+
+<!-- Matomo -->
+<!-- Fear not FERRY TRACKERS 
+just wanna know if anyone is using this thing
+imagine if I were using Google Analytics! -->
+<script type="text/javascript">
+  var _paq = window._paq = window._paq || [];
+  _paq.push(['trackPageView']);
+  _paq.push(['enableLinkTracking']);
+  (function() {
+    var u="https://brightrain.matomo.cloud/";
+    _paq.push(['setTrackerUrl', u+'matomo.php']);
+    _paq.push(['setSiteId', '4']);
+    var d=document, g=d.createElement('script'), s=d.getElementsByTagName('script')[0];
+    g.type='text/javascript'; g.async=true; g.src='//cdn.matomo.cloud/brightrain.matomo.cloud/matomo.js'; s.parentNode.insertBefore(g,s);
+  })();
+</script>
+<!-- End Matomo Code -->
 
 </head>
 
 <body>
   <div id="app">
+    <div id="initialLoader" v-show="!loaded"></div>
     <div id="loader" v-show="isUpdating"></div>
-    <div id="infoBox" class="panel" v-show="showingInfobox">
+    <div id="mapView">
+      <div id="ferryInfoBox" class="panel" v-show="showingFerryInfobox">
+        <img src="assets/washington-state-ferries-logo.svg" alt="wa ferries logo" id="info-ferry-logo">
+        <h1 class="info-title">{{selectedVessel.attributes.VesselName}}</h1>
+        <h2><b>{{selectedVessel.attributes.DepartingTerminalName}} ➟
+            {{selectedVessel.attributes.ArrivingTerminalName}}</b></h2>
+        <h4><b>ETA {{selectedVessel.attributes.EtaHuman}}</b></h4>
+        <br>
+        <p>speed: {{selectedVessel.attributes.Speed}} | heading: {{selectedVessel.attributes.Heading}}</p>
+        <span id="ferryZoom">
+          <a class="ferry-link" @click="zoomToSelectedFerry">
+            <i class="esri-icon-zoom-in-magnifying-glass"></i> ZOOM TO
+          </a>
+        </span>
+        <i style='float:right;'><small>last updated: {{selectedVessel.attributes.TimeStampHuman}}</small></i>
+    </div>
+    <div id="terminalInfoBox" class="panel" v-show="showingTerminalInfobox">
       <img src="assets/washington-state-ferries-logo.svg" alt="wa ferries logo" id="info-ferry-logo">
-      <h1 class="vessel-title">{{selectedVessel.attributes.VesselName}}</h1>
-      <h2><b>{{selectedVessel.attributes.DepartingTerminalName}} ➟
-          {{selectedVessel.attributes.ArrivingTerminalName}}</b></h2>
-      <h4><b>ETA {{selectedVessel.attributes.EtaHuman}}</b></h4>
+      <h1 class="info-title">
+      {{ selectedTerminal.attributes.TerminalName + " Ferrydock (" 
+      + selectedTerminal.attributes.TerminalAbbrev + ")" }}
+      </h1>
+      <h5>
+        <b>{{ selectedTerminal.attributes.AddressLineOne }}</b>
+        <br>
+        <b v-show="selectedTerminal.attributes.AddressLineTwo!='' && selectedTerminal.attributes.AddressLineTwo!=null">{{ selectedTerminal.attributes.AddressLineTwo }}<br></b>
+        <b>{{ selectedTerminal.attributes.City }}</b>
+      </h5>
       <br>
-      <p>speed: {{selectedVessel.attributes.Speed}} | heading: {{selectedVessel.attributes.Heading}}</p>
-      <span id="ferryZoom">
-        <a class="ferry-link" @click="zoomToSelectedFerry">
+      <!--<div v-show="selectedTerminal.waitTimes.length>0">
+        <div class="title is-6">WAIT TIMES</div>
+        <ul>
+          <li v-for="waitTime in selectedTerminal.waitTimes" :key="waitTime.RouteName">
+            <b>{{ waitTime.RouteName }}</b>
+            <div>{{ waitTime.WaitTimeIVRNotes }}</div>
+            <i>{{ waitTime.waitTimeLastUpdatedHuman }}</i>
+          </li>
+        </ul>
+      </div>-->
+      <div v-show="selectedTerminal.bulletins.length>0">
+        <br>
+        <div class="title is-6">TODAY'S BULLETINS</div>
+        <ul>
+          <li v-for="bulletin in selectedTerminal.bulletins" :key="bulletin.BulletinTitle">
+            <b>{{ bulletin.BulletinTitle }}</b>
+            <div v-html="bulletin.BulletinText"></div>
+            <i>{{ bulletin.BulletinLastUpdatedSortable }}</i>
+            <br>
+          </li>
+        </ul>
+      </div>
+      <span id="terminalZoom">
+        <a class="ferry-link" @click="zoomToSelectedTerminal">
           <i class="esri-icon-zoom-in-magnifying-glass"></i> ZOOM TO
         </a>
       </span>
-      <i style='float:right;'><small>last updated: {{selectedVessel.attributes.TimeStampHuman}}</small></i>
     </div>
     <div id="introBox" class="panel" v-show="showingIntrobox">
       <img src="assets/washington-state-ferries-logo.svg" alt="wa ferries logo" id="ferry-logo">
@@ -45,7 +106,8 @@
       <br>
       <p>Select a ferry to display vessel schedule and other real-time details</p>
     </div>
-    <div id="mapView"></div>
+
+    </div>
     <div id="outOfExtentNotification" v-bind:class="{ show: showingOutOfExtentNotification }" class="notification is-warning">
       Your location appears to be outside of the ferry area. We've done our best to find you!
     </div>

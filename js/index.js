@@ -8,30 +8,55 @@ require([
 	"esri/widgets/Locate",
 	"esri/widgets/BasemapToggle",
 	"esri/widgets/Home",
-	"esri/geometry/geometryEngine"
-], function (Map, MapView, GraphicsLayer, Graphic, Point, Extent, Locate, BasemapToggle, Home, geometryEngine) {
+	"esri/geometry/geometryEngine",
+	"esri/core/watchUtils"
+], function (Map, MapView, GraphicsLayer, Graphic, Point, Extent, Locate, BasemapToggle, Home, geometryEngine, watchUtils) {
 	const app = new Vue({
 		el: "#app",
 		data: {
+			loaded: false,
 			isUpdating: false,
 			showingIntrobox: true,
-			showingInfobox: false,
+			showingFerryInfobox: false,
+			showingTerminalInfobox: false,
 			showingOutOfExtentNotification: false,
 			showAbout: false,
 			ferriesGraphicsLayer: null,
 			terminalsGraphicsLayer: null,
 			selectedFerryGraphicsLayer: null,
+			selectedTerminalGraphicsLayer: null,
 			selectedFerryMarker: null,
 			selectedFerryMarkerSymbol: {
 				type: "simple-marker",
 				style: "circle",
 				color: [255, 255, 255, 0],
-				size: "48px",
+				size: "65px",
 				outline: {
 					color: [0, 123, 95],
 					width: 1
 				}
 			},
+			selectedTerminalMarker: null,
+			selectedTerminalMarkerSymbol: {
+				type: "simple-marker",
+				style: "circle",
+				color: [255, 255, 255, 0],
+				size: "60px",
+				outline: {
+					color: [0, 123, 95],
+					width: 2
+				}
+			},
+			currentZoomLevel: 0,
+			lastZoomLevel: 0,
+			currentFerrySymbolWidth: 30,
+			currentFerrySymbolHeight: 30,
+			smallFerrySymbolWidth: 30,
+			smallFerrySymbolHeight: 30,
+			medFerrySymbolWidth: 40,
+			medFerrySymbolHeight: 40,
+			largeFerrySymbolWidth: 60,
+			largeFerrySymbolHeight: 60,
 			mapExtent: {
 				type: "extent",
 				xmin: -123,
@@ -43,31 +68,42 @@ require([
 				headingEast: {
 					type: "picture-marker",
 					url: "assets/ferry-heading-east.png",
-					width: "60px",
-					height: "60px",
+					width: "30px",
+					height: "30px",
 					angle: 0
 				},
 				headingWest: {
 					type: "picture-marker",
 					url: "assets/ferry-heading-west.png",
-					width: "60px",
-					height: "60px",
+					width: "30px",
+					height: "30px",
 					angle: 0
 				}
 			},
 			terminalMarker: {
 				type: "picture-marker",
-				url: "assets/terminal.png",
+				url: "assets/terminal.svg",
 				width: "40px",
 				height: "40px",
 				angle: 0
 			},
+			bulletinTerminalMarker: {
+				type: "picture-marker",
+				url: "assets/terminal-with-bulletin.svg",
+				width: "40px",
+				height: "32px",
+				angle: 0
+			},
 			config: {
+				// https://www.wsdot.wa.gov/Traffic/api/
 				ferryFeedUrl: "https://www.wsdot.wa.gov/Ferries/API/Vessels/rest/vessellocations",
 				ferryFeedParams: "?apiaccesscode={e7533438-5a9f-4dd6-ab8e-65ccdb7685de}&callback=?",
 				// https://www.wsdot.wa.gov/ferries/api/terminals/rest/help
 				// https://www.wsdot.wa.gov/ferries/api/terminals/rest/help/operations/GetAllTerminalLocations
-				terminalLocationsFeedUrl: "http://www.wsdot.wa.gov/Ferries/API/Terminals/rest/terminallocations"
+				terminalLocationsFeedUrl: "https://www.wsdot.wa.gov/Ferries/API/Terminals/rest/terminallocations",
+				terminalBulletinsFeedUrl: "//www.wsdot.wa.gov/Ferries/API/Terminals/rest/terminalbulletins",
+				terminalWaitTimesFeedUrl: "//www.wsdot.wa.gov/Ferries/API/Terminals/rest/terminalwaittimes",
+				terminalAlertsFeedUrl: " //www.wsdot.wa.gov/Ferries/API/Schedule/rest/alerts",
 			},
 			selectedVessel: {
 				attributes: {
@@ -153,11 +189,66 @@ require([
 					"ZoomLevel":2147483647,
 					"Latitude":1.26743233E+15,
 					"Longitude":1.26743233E+15
+				}],
+				bulletins: [{
+					"BulletinTitle":"String content",
+					"BulletinText":"String content",
+					"BulletinSortSeq":2147483647,
+					"BulletinLastUpdated":"\/Date(928174800000-0700)\/",
+					"BulletinLastUpdatedSortable":"String content"
+				}],
+				waitTimes: [{
+					"RouteID": 0,
+					"RouteName": "Edmonds / Kingston",
+					"WaitTimeIVRNotes": "",
+					"WaitTimeLastUpdated": "/Date(1597779070000-0700)/",
+					"WaitTimeNotes": "",
+					"waitTimeLastUpdatedHuman": ""
 				}]
-			}]
+			}],
+			selectedTerminal: {
+				attributes: {
+					"TerminalID":2147483647,
+					"TerminalSubjectID":2147483647,
+					"RegionID":2147483647,
+					"TerminalName":"String content",
+					"TerminalAbbrev":"String content",
+					"SortSeq":2147483647,
+					"Latitude":1.26743233E+15,
+					"Longitude":1.26743233E+15,
+					"AddressLineOne":"String content",
+					"AddressLineTwo":"String content",
+					"City":"String content",
+					"State":"String content",
+					"ZipCode":"String content",
+					"Country":"String content",
+					"MapLink":"String content",
+					"Directions":"String content",
+					"DispGISZoomLoc":[{
+						"ZoomLevel":2147483647,
+						"Latitude":1.26743233E+15,
+						"Longitude":1.26743233E+15
+					}]
+				},
+				bulletins: [{
+					"BulletinTitle":"String content",
+					"BulletinText":"String content",
+					"BulletinSortSeq":2147483647,
+					"BulletinLastUpdated":"\/Date(928174800000-0700)\/",
+					"BulletinLastUpdatedSortable":"String content"
+				}],
+				waitTimes: [{
+					"RouteID": 0,
+					"RouteName": "Edmonds / Kingston",
+					"WaitTimeIVRNotes": "",
+					"WaitTimeLastUpdated": "/Date(1597779070000-0700)/",
+					"WaitTimeNotes": ""
+				}]
+			}
 		},
 		mounted() {
 			this.init();
+			this.loaded = true;
 		},
 		methods: {
 			init() {
@@ -221,12 +312,13 @@ require([
 				this.view.ui.add(locate, "bottom-left");
 				// fires when the users location is found
 				locate.on("locate", e => {
-					// ToDo: test if users location is within our map view constraint container
-					// if not the map will not pan to the location so let the user know
+					
 					let userLoc = new Point({
 						latitude: e.position.coords.latitude,
 						longitude: e.position.coords.longitude
 					});
+					// test if users location is within our map view constraint container
+					// if not the map will not pan to the location so let the user know
 					const mapExtent = new Extent(this.mapExtent);
 					let inExtent = geometryEngine.within(userLoc, mapExtent);
 					if(inExtent===false) {
@@ -243,6 +335,10 @@ require([
 
 				this.terminalsGraphicsLayer = new GraphicsLayer();
 				this.map.add(this.terminalsGraphicsLayer);
+
+				// the graphics layer that will hold the selected terminal graphic
+				this.selectedTerminalGraphicsLayer = new GraphicsLayer();
+				this.map.add(this.selectedTerminalGraphicsLayer);
 
 				// the graphics layer that will hold the selected ferry graphic
 				this.selectedFerryGraphicsLayer = new GraphicsLayer();
@@ -267,9 +363,14 @@ require([
 								// return if this is a ferry graphic
 								return result.graphic.layer === this.ferriesGraphicsLayer;
 							});
+							let clickedTerminal = response.results.filter(result => {
+								// return if this is a terminal graphic
+								return result.graphic.layer === this.terminalsGraphicsLayer;
+							});
 							if (clickedVessel.length > 0) {
 								let clickedVesselGraphic = clickedVessel[0].graphic;
-								this.showingInfobox = true;
+								this.showingFerryInfobox = true;
+								this.showingTerminalInfobox = false;
 								// set to selected
 								this.selectedVessel = clickedVesselGraphic;
 								// this is the marker that shows under the selected ferry
@@ -279,10 +380,37 @@ require([
 									symbol: this.selectedFerryMarkerSymbol
 								});
 								this.selectedFerryGraphicsLayer.graphics.add(this.selectedFerryMarker);
-							} else {
-								// clear select and info box and show intro box
-								this.showingInfobox = false;
+								// in case we have a terminal already selected
+								this.selectedTerminalGraphicsLayer.removeAll();
+							} 
+							else if (clickedTerminal.length > 0) {
+								let clickedTerminalGraphic = clickedTerminal[0].graphic;
+								this.showingTerminalInfobox = true;
+								this.showingFerryInfobox = false;
+								// oh man don't hate me but we are just going to tack on the bulletins here
+								clickedTerminalGraphic.bulletins = [];
+								clickedTerminalGraphic.waitTimes = [];
+								// set selected terminal to clicked terminal graphic
+								this.selectedTerminal = clickedTerminalGraphic;
+								this.selectedTerminalGraphicsLayer.removeAll();
+								this.selectedTerminalMarker = new Graphic({
+									geometry: clickedTerminalGraphic.geometry,
+									symbol: this.selectedTerminalMarkerSymbol
+								});
+								this.selectedTerminalGraphicsLayer.graphics.add(this.selectedTerminalMarker);
+								// in case we have a ferry already selected, clear it
 								this.selectedFerryGraphicsLayer.removeAll();
+								// add any bulletins for the selected terminal
+								// note the hack to add the bulletins array required by this function
+								this.getSelectedTerminalBulletins();
+								this.getSelectedTerminalWaitTimes();
+							}
+							else {
+								// clear select and info box and show intro box
+								this.showingFerryInfobox = false;
+								this.selectedFerryGraphicsLayer.removeAll();
+								this.showingTerminalInfobox = false;
+								this.selectedTerminalGraphicsLayer.removeAll();
 								this.showingIntrobox = true;
 							}
 						}
@@ -300,8 +428,65 @@ require([
 				setInterval(() => {
 					this.getFerries(true);
 				}, 8000);
-			},
 
+				watchUtils.whenTrue(this.view, "stationary", () => { 
+					this.scaleSymbols(this.view.zoom);
+				  });
+			},
+			scaleSymbols(currentZoom) {
+				this.currentZoomLevel = currentZoom;
+				let needChange = false;
+				if(this.currentZoomLevel >= 14 && this.lastZoomLevel < 14) {
+					this.currentFerrySymbolWidth = this.largeFerrySymbolWidth;
+					this.currentFerrySymbolHeight = this.largeFerrySymbolHeight;
+					needChange = true;
+				}
+				else if(this.currentZoomLevel < 14 && this.lastZoomLevel <= 14) {
+					this.currentFerrySymbolWidth = this.smallFerrySymbolWidth;
+					this.currentFerrySymbolHeight = this.smallFerrySymbolHeight;
+					needChange = true;
+				}
+				// else if(this.currentZoomLevel < 22 && this.lastZoomLevel >= 22) {
+				// 	width = this.largeFerrySymbolWidth;
+				// 	height = this.largeFerrySymbolHeight;
+				// 	needChange = true;
+				// }
+
+				if(needChange) {
+					this.ferriesGraphicsLayer.graphics.items.forEach(f => {
+						f.symbol = {
+							type: f.symbol.type,
+							url: f.symbol.url,
+							width: this.currentFerrySymbolWidth + "px",
+							height: this.currentFerrySymbolHeight + "px",
+							angle: f.attributes.Heading
+						};
+					});
+				}
+				this.lastZoomLevel = this.currentZoomLevel;
+			},
+			getSelectedTerminalBulletins() {
+				$.getJSON(this.config.terminalBulletinsFeedUrl + 
+					"/" + this.selectedTerminal.attributes.TerminalID +
+					this.config.ferryFeedParams, terminalBulletin => {
+					terminalBulletin.Bulletins.forEach(b => {
+						if(this.isToday(b.BulletinLastUpdated)) {
+							this.selectedTerminal.bulletins.push(b);
+						}
+					});
+				});
+			},
+			getSelectedTerminalWaitTimes() {
+				$.getJSON(this.config.terminalWaitTimesFeedUrl + 
+					"/" + this.selectedTerminal.attributes.TerminalID +
+					this.config.ferryFeedParams, terminalWaitTimes => {
+					this.selectedTerminal.waitTimes = terminalWaitTimes.WaitTimes.map(wait => {
+						let wt = wait;
+						wt.waitTimeLastUpdatedHuman = this.convertToHumanDate(wait.WaitTimeLastUpdated);
+						return wt;
+					});
+				});
+			},
 			getFerries(update) {
 				this.isUpdating = true;
 				// FETCH doesn't support jsonp\callback but the vessel api requires it
@@ -329,11 +514,11 @@ require([
 							existingFerry.geometry = pt;
 							// set new attributes (includes ETA, speed, etc.)
 							existingFerry.attributes = theFerry;
-							existingFerry.attributes.EtaHuman = this.convertToHumanDate(theFerry.Eta);
-							existingFerry.attributes.ScheduledDepartureHuman = this.convertToHumanDate(theFerry.ScheduledDeparture);
-							existingFerry.attributes.TimeStampHuman = this.convertToHumanDate(theFerry.TimeStamp);
+							existingFerry.attributes.EtaHuman = this.convertToHumanTime(theFerry.Eta);
+							existingFerry.attributes.ScheduledDepartureHuman = this.convertToHumanTime(theFerry.ScheduledDeparture);
+							existingFerry.attributes.TimeStampHuman = this.convertToHumanTime(theFerry.TimeStamp);
 						});
-						if (this.showingInfobox) {
+						if (this.showingFerryInfobox) {
 							// find and update the selected vessel
 							this.selectedVessel = this.ferriesGraphicsLayer.graphics.items.filter(f => {
 								return f.attributes.VesselName == this.selectedVessel.attributes.VesselName;
@@ -354,9 +539,9 @@ require([
 							let symbol = this.getFerryMarkerSymbol(ferry.Heading);
 
 							// add formatted dates
-							ferry.EtaHuman = this.convertToHumanDate(ferry.Eta);
-							ferry.ScheduledDepartureHuman = this.convertToHumanDate(ferry.ScheduledDeparture);
-							ferry.TimeStampHuman = this.convertToHumanDate(ferry.TimeStamp);
+							ferry.EtaHuman = this.convertToHumanTime(ferry.Eta);
+							ferry.ScheduledDepartureHuman = this.convertToHumanTime(ferry.ScheduledDeparture);
+							ferry.TimeStampHuman = this.convertToHumanTime(ferry.TimeStamp);
 
 							let ferryGraphic = new Graphic({
 								geometry: pt,
@@ -378,6 +563,7 @@ require([
 					this.terminals = terminals;
 
 					this.terminals.forEach(terminal => {
+						terminal.bulletins = [];
 						let pt = new Point({
 							latitude: terminal.Latitude,
 							longitude: terminal.Longitude
@@ -392,13 +578,41 @@ require([
 						});
 
 						this.terminalsGraphicsLayer.graphics.add(terminalGraphic);
-					})
+					});
+					// now see if there are any bulletins issued today for any of our terminals
+					$.getJSON(this.config.terminalBulletinsFeedUrl + this.config.ferryFeedParams, terminalBulletins => {
+						terminalBulletins.forEach(terminalBulletin => {
+							// find the terminal this bulletin belongs to
+							let terminalForBulletin = this.terminals.find(terminal => 
+								terminal.TerminalID == terminalBulletin.TerminalID
+							);
+							// if this bulletin was issues today add it to this terminals Today's Bulletins
+							terminalBulletin.Bulletins.forEach(b => {
+								if(this.isToday(b.BulletinLastUpdated)) {
+									terminalForBulletin.bulletins.push(b);
+									// get the graphic related to this terminal
+									let existingTerminalGraphic = this.terminalsGraphicsLayer.graphics.items.find(t => {
+										return t.attributes.TerminalID == terminalForBulletin.TerminalID;
+									});
+									// set the terminal graphic symbol to marker
+									existingTerminalGraphic.symbol = this.bulletinTerminalMarker;
+								}
+							});
+							
+						});
+					});
 				});
 			},
 			zoomToSelectedFerry() {
 				this.view.goTo({
 					target: this.selectedVessel,
-					zoom: 12
+					zoom: 14
+				});
+			},
+			zoomToSelectedTerminal() {
+				this.view.goTo({
+					target: this.selectedTerminal,
+					zoom: 14
 				});
 			},
 			getFerryMarkerSymbol(heading) {
@@ -409,9 +623,13 @@ require([
 				// then set the angle of the icon and return it
 				if (heading > 0 && heading <= 180) {
 					this.ferryMarkers.headingEast.angle = heading;
+					this.ferryMarkers.headingEast.width = this.currentFerrySymbolWidth;
+					this.ferryMarkers.headingEast.height = this.currentFerrySymbolHeight;
 					return this.ferryMarkers.headingEast;
 				} else {
 					this.ferryMarkers.headingWest.angle = heading;
+					this.ferryMarkers.headingWest.width = this.currentFerrySymbolWidth;
+					this.ferryMarkers.headingWest.height = this.currentFerrySymbolHeight;
 					return this.ferryMarkers.headingWest;
 				}
 			},
@@ -420,7 +638,7 @@ require([
 				// see ferry marker symbol to set symbol if so
 				return this.terminalMarker;
 			},
-			convertToHumanDate(vesselAPIDate) {
+			convertToHumanTime(vesselAPIDate) {
 				if (vesselAPIDate != null) {
 					// e.g. of what is returned from vessels api
 					// "/Date(1613446638000-0800)/"
@@ -437,6 +655,46 @@ require([
 				} else {
 					return "unavailable";
 				}
+			},
+			convertToHumanDate(aPIDate) {
+				if (aPIDate != null) {
+					// e.g. of a date returned from api
+					// "/Date(1613446638000-0800)/"
+					// need to peel out the epoch time
+					let left = aPIDate.split("-")[0];
+					let epochString = left.replace("/Date(", "");
+					var epochTimestamp = parseInt(epochString);
+					let timestamp = new Date(epochTimestamp).toLocaleString('en-US', {
+						timeZone: 'America/Los_Angeles'
+					});
+					return timestamp;
+				} else {
+					return "unavailable";
+				}
+			},
+			isToday(aPIDate) {
+				// e.g. of a date returned from api
+				// "/Date(1613446638000-0800)/"
+				let left = aPIDate.split("-")[0];
+				let epochString = left.replace("/Date(", "");
+				// we know this will be in local time
+				const epochNum = parseInt(epochString);
+				const theDate = new Date(epochNum);
+				const today = new Date(new Date().toLocaleString('en-US', {
+					timeZone: 'America/Los_Angeles'
+				}));
+				if(this.getShortDate(theDate) == this.getShortDate(today)) {
+					return true;
+				}
+				else {
+					return false;
+				}
+			},
+			getShortDate(d) {
+				let year = d.getFullYear();
+				let month = d.getMonth() + 1;
+				let day = d.getDate();
+				return `${year}-${month}-${day}`
 			}
 		}
 	});
