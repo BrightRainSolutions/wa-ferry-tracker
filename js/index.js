@@ -90,8 +90,8 @@ require([
 			bulletinTerminalMarker: {
 				type: "picture-marker",
 				url: "assets/terminal-with-bulletin.svg",
-				width: "40px",
-				height: "32px",
+				width: "55px",
+				height: "43px",
 				angle: 0
 			},
 			config: {
@@ -195,7 +195,8 @@ require([
 					"BulletinText":"String content",
 					"BulletinSortSeq":2147483647,
 					"BulletinLastUpdated":"\/Date(928174800000-0700)\/",
-					"BulletinLastUpdatedSortable":"String content"
+					"BulletinLastUpdatedSortable":"String content",
+					"BulletinLastUpdatedReadable":"String content"
 				}],
 				waitTimes: [{
 					"RouteID": 0,
@@ -235,7 +236,8 @@ require([
 					"BulletinText":"String content",
 					"BulletinSortSeq":2147483647,
 					"BulletinLastUpdated":"\/Date(928174800000-0700)\/",
-					"BulletinLastUpdatedSortable":"String content"
+					"BulletinLastUpdatedSortable":"String content",
+					"BulletinLastUpdatedReadable":"String content"
 				}],
 				waitTimes: [{
 					"RouteID": 0,
@@ -471,6 +473,8 @@ require([
 					this.config.ferryFeedParams, terminalBulletin => {
 					terminalBulletin.Bulletins.forEach(b => {
 						if(this.isToday(b.BulletinLastUpdated)) {
+							// set the bulletin time to human readable
+							b.BulletinLastUpdatedReadable = this.convertToHumanDate(b.BulletinLastUpdated);
 							this.selectedTerminal.bulletins.push(b);
 						}
 					});
@@ -589,6 +593,8 @@ require([
 							// if this bulletin was issues today add it to this terminals Today's Bulletins
 							terminalBulletin.Bulletins.forEach(b => {
 								if(this.isToday(b.BulletinLastUpdated)) {
+									// set the bulletin time to human readable
+									b.BulletinLastUpdatedReadable = this.convertToHumanDate(b.BulletinLastUpdated);
 									terminalForBulletin.bulletins.push(b);
 									// get the graphic related to this terminal
 									let existingTerminalGraphic = this.terminalsGraphicsLayer.graphics.items.find(t => {

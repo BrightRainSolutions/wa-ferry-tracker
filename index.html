@@ -89,7 +89,7 @@ imagine if I were using Google Analytics! -->
           <li v-for="bulletin in selectedTerminal.bulletins" :key="bulletin.BulletinTitle">
             <b>{{ bulletin.BulletinTitle }}</b>
             <div v-html="bulletin.BulletinText"></div>
-            <i>{{ bulletin.BulletinLastUpdatedSortable }}</i>
+            <i>{{ bulletin.BulletinLastUpdatedReadable }}</i>
             <br>
           </li>
         </ul>
